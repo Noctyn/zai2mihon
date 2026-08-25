@@ -1,0 +1,66 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            artifact_name: zai2mihon-windows-amd64.exe
+            binary_name: dist/zai2mihon.exe
+          - os: ubuntu-latest
+            artifact_name: zai2mihon-linux-amd64
+            binary_name: dist/zai2mihon
+          - os: macos-latest
+            artifact_name: zai2mihon-macos-arm64
+            binary_name: dist/zai2mihon
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          uv sync --dev
+
+      - name: Run Tests
+        run: |
+          uv run pytest -v
+
+      - name: Build Executable with PyInstaller
+        run: |
+          uv run pyinstaller --onefile --name zai2mihon --clean main.py
+
+      - name: Rename Artifact
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            mv dist/zai2mihon.exe dist/${{ matrix.artifact_name }}
+          else
+            mv dist/zai2mihon dist/${{ matrix.artifact_name }}
+          fi
+
+      - name: Upload Binary to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/${{ matrix.artifact_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
