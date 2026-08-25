@@ -138,6 +138,7 @@ def merge_zaimanhua_into_backup_pb(
             if cid in manga_by_comic_id:
                 m = manga_by_comic_id[cid]
                 stats["updated_history"] += 1
+                page_rec = max(1, int(r_item.get("record", 1))) if r_item.get("record") else 1
 
                 if len(m.chapters) > 0:
                     matched_idx = -1
@@ -168,7 +169,7 @@ def merge_zaimanhua_into_backup_pb(
                         if not target_ch.read:
                             target_ch.read = True
                             stats["chapters_marked_read"] += 1
-                        target_ch.lastPageRead = 1
+                        target_ch.lastPageRead = page_rec
 
                         existing_hist = next((h for h in m.history if h.url == target_url), None)
                         if existing_hist:
@@ -186,6 +187,7 @@ def merge_zaimanhua_into_backup_pb(
                             chapter_id=ch_id,
                             chapter_name=ch_name,
                             viewing_time_ms=view_time_ms,
+                            last_page_read=page_rec,
                         )
                         if ch_model and hist_model:
                             ch_pb = m.chapters.add()
@@ -194,6 +196,7 @@ def merge_zaimanhua_into_backup_pb(
                             copy_history_model_to_pb(hist_pb, hist_model)
             else:
                 if ch_id:
+                    page_rec = max(1, int(r_item.get("record", 1))) if r_item.get("record") else 1
                     new_m = sub_item_to_mihon_manga(
                         item=r_item,
                         source_id=source_id,
@@ -205,6 +208,7 @@ def merge_zaimanhua_into_backup_pb(
                         chapter_id=ch_id,
                         chapter_name=ch_name,
                         viewing_time_ms=view_time_ms,
+                        last_page_read=page_rec,
                     )
                     m_pb = backup_pb.backupManga.add()
                     copy_manga_model_to_pb(m_pb, new_m)

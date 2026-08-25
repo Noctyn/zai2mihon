@@ -95,6 +95,7 @@ def create_chapter_and_history(
     chapter_id: Any,
     chapter_name: Optional[str] = None,
     viewing_time_ms: Optional[int] = None,
+    last_page_read: int = 1,
 ) -> tuple[Optional[MihonChapter], Optional[MihonHistory]]:
     """Construct MihonChapter and MihonHistory objects for a given chapter."""
     if not comic_id or not chapter_id:
@@ -103,6 +104,7 @@ def create_chapter_and_history(
     chapter_url = normalize_chapter_url(comic_id, chapter_id)
     ch_name = repair_mojibake(chapter_name) or "阅读历史"
     time_ms = viewing_time_ms or int(time.time() * 1000)
+    page_read = max(1, int(last_page_read)) if last_page_read else 1
 
     ch_num = 0.0
     num_match = re.search(r"(\d+(\.\d+)?)", ch_name)
@@ -116,7 +118,7 @@ def create_chapter_and_history(
         url=chapter_url,
         name=ch_name,
         read=True,
-        last_page_read=1,
+        last_page_read=page_read,
         date_fetch=time_ms,
         date_upload=time_ms,
         chapter_number=ch_num,
@@ -176,11 +178,13 @@ def sub_item_to_mihon_manga(
         ch_id = rec.get("chapter_id")
         ch_name = rec.get("chapter_name")
         view_time = parse_datetime_to_ms(rec.get("viewing_time"))
+        page_rec = rec.get("record", 1)
         ch, hist = create_chapter_and_history(
             comic_id=comic_id,
             chapter_id=ch_id,
             chapter_name=ch_name,
             viewing_time_ms=view_time,
+            last_page_read=page_rec,
         )
         if ch:
             manga.chapters.append(ch)
@@ -190,11 +194,13 @@ def sub_item_to_mihon_manga(
         ch_id = item.get("chapter_id")
         ch_name = item.get("chapter_name")
         view_time = parse_datetime_to_ms(item.get("viewing_time"))
+        page_rec = item.get("record", 1)
         ch, hist = create_chapter_and_history(
             comic_id=comic_id,
             chapter_id=ch_id,
             chapter_name=ch_name,
             viewing_time_ms=view_time,
+            last_page_read=page_rec,
         )
         if ch:
             manga.chapters.append(ch)
